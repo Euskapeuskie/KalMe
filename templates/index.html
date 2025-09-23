@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block main %}
+    <div class="text-start mb-4">
+        <h3>The kalman filter is a standard filter in many applications where...</h3>
+        <ul>
+            <li>we have noisy measurements of a system</li>
+            <li>we want to estimate the true state of the system</li>
+            <li>we have a model of how the system evolves over time</li>
+            <li>hidden states that aren't measured directly can provide additional filter characteristics</li>
+        </ul>
+        <p>Typical applications are in aerospace, autonomous driving, GPS and many more</p>
+        <br>
+        <h3>There are several types of kalman filters, of which some are implemented graphically on this website</h3>
+        <ul>
+            <li>Linear Kalman Filter (KF)</li>
+                <ul>
+                    <li><a href="/kalman_1d">1-dimensional KF</a> e.g. tracking the altitude of a falling object without air resistance</li>
+                    <li><a href="/kalman_2d">2-dimensional KF</a> e.g. tracking of an object in x-y-plane</li>
+                </ul>
+            <li>Extended Kalman Filter (EKF)</li>
+                <ul>
+                    <li>1-dimensional EKF e.g. tracking the altitude of a falling object with air resistance</li>
+                    <li>2-dimensional EKF e.g. tracking objects with circual paths (think e.g. cars!)</li>
+                </ul>
+            <li>Unscented Kalman Filter (UKF)</li>
+                <ul>
+                    <li>More advanced nonlinear cases</li>
+                </ul>
+            <li>Monte Carlo methods</li>
+                <ul>
+                    <li>Not a kalman filter but a stochastic filtering technique that is often used today</li>
+                </ul>
+    </div>
+{% endblock %}

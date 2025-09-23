@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Feedback
+{% endblock %}
+
+{% block main %}
+    <div class="text-start mb-4">
+        <h3>This website is for educational purposes</h3>
+        <p>It has been created as a way of self-teaching myself how kalman filters work, where they don't work etc.
+            Feel free to use this website as an educational tool for yourself, no correctness of the implementations guaranteed.</p>
+        <p>I'm happy about any feedback you have how to improve this page, feel free to leave some remarks below</p>
+    </div>
+    <form action="/feedback", method="POST">
+        <div class="mb-3">
+            <label for="feedback" class="form-label">Your feedback:</label>
+            <textarea autofocus class="form-control" id="feedback" name="feedback" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+
+    </form>
+{% endblock %}

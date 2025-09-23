@@ -1,0 +1,157 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    1D Kalman Filter
+{% endblock %}
+
+{% block main %}
+    <div class="text-start mb-4">
+        <h3>1D Linear Kalman Filter</h3>
+        <ul>
+            <li>Linear system: x(t) = m*t + c</li>
+            <ul>
+                <li>The Kalman filter does a great job at filtering out the noise from the measurements</li>
+                <li>Both constant velocity and constant acceleration models work well</li>
+            </ul>
+            <li>Quadratic system: y(t) = a*t² + b*t + c</li>
+            <ul>
+                <li>The constant velocity filter has a tracking difference to the true data, the constant acceleration model works fine!</li>
+                <li>Generally speaking you can kalman filter any polynomial as long as the order of the kalman filters state vector is also increased</li>
+            </ul>
+            <li>Sinusoidal system: y(t) = sin(w*t) + c</li>
+            <ul>
+                <li>The Kalman filter still manages to filter out a lot of the noise from the measurements</li>
+                <li>The constant acceleration model performs slightly better than the constant velocity model</li>
+                <li>Notice how the filter drifts for small process variance! The linear kalman filter is not the right choice for these kind of movements</li>
+                <li>In this case an extended kalman filter would be a better option that can deal with curved movements</li>
+            </ul>
+            <li>Exponential system: y(t) = a * e^(l*t) + c</li>
+            <ul>
+                <li>The kalman filter can't keep track of the systems behaviour (noise is modelled to increase exponentially aswell)</li>
+                <li>The system can be linearized via applying a log transform -> the kalman filter is able to track that linearized system and then retransform it into exponential space</li>
+            </ul>
+        </ul>
+    </div>
+    <div style="display: flex; align-items: flex-start;">       
+        <div style="flex: 1; padding: 20px;">
+            <form action="/kalman_1d" method="get" class="mb-4" id="kalman-form">
+                <!-- Select model velocity or acceleration -->
+                <select class="form-select" id="system" name="system">
+                    <option value="" disabled selected>Select system</option>
+                    {% for system in systems %}
+                        <option value="{{ system }}">{{ system.replace('_', ' ').title() }}</option>
+                    {% endfor %}
+                </select>
+
+                <!-- Select step size dt -->
+                <label id="dt-label" for="customRange3" class="form-label">
+                    Step size:
+                    <input id="dt" type="range" name="dt" class="form-range" min="0" max="0.1" step="0.001" value="0.01">
+                </label>
+
+                <!-- Select measurement variance -->
+                <label id="measurement-variance-label" for="customRange3" class="form-label">
+                    Measurement variance:
+                    <input id="measurement-variance" type="range" name="measurement-variance" class="form-range" min="0" max="0.5" step="0.01" value="0.05">
+                </label>
+
+                <!-- Select process variance -->
+                <label id="process-variance-label" for="customRange3" class="form-label">
+                    Process variance:
+                    <input id="process-variance" type="range" name="process-variance" class="form-range" min="0" max="50" step="0.1" value="0.5">
+                </label>
+
+                <!-- Select Kalman model velocity or acceleration -->
+                <select class="form-select" id="model" name="model">
+                    <option value="" disabled selected>Select kalman model</option>
+                    {% for model in models %}
+                        <option value="{{ model }}">{{ model.replace('_', ' ').title() }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        <div style="flex: 2; padding: 20px;">
+            <div style="width: 600px; height: 600px;">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- https://www.chartjs.org/docs/latest/getting-started/ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Initialize dt label
+        // dt = document.getElementById("dt").value;
+        // document.getElementById("dt-label").innerText = "Step size: " + dt;
+
+        // Initialize chart.js
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+            datasets: [
+                {
+                label: 'Noisy measurements',
+                borderColor: 'red',
+                borderWidth: 2,
+                showLine : false,
+                fill: false,
+                order: 1,
+                },
+                {
+                label: 'Filtered',
+                borderColor: 'green',
+                borderWidth: 2,
+                showLine : true,
+                fill: false,
+                pointRadius: 0,
+                order: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {min: -0.1, max: 1.1},
+                    y: {min: -0.1, max: 1.1}
+                }
+            }
+        });
+        chart.update();
+        
+        // Timestep changed
+        document.getElementById("kalman-form").addEventListener("input", async (e) => {
+            // document.getElementById("dt-label").innerText = "Step size: " + e.target.value;
+            const response = await fetch("/measurements_1d?dt=" + document.getElementById("dt").value
+                + "&model=" + document.getElementById("model").value
+                + "&system=" + document.getElementById("system").value
+                + "&measurement_variance=" + document.getElementById("measurement-variance").value
+                + "&process_variance=" + document.getElementById("process-variance").value
+            );
+            const data = await response.json();
+            console.log(data);
+
+            // update chart
+            chart.data.datasets[0].data = data.zs.map(point => ({x: point[0], y: point[1]})); // noisy measurements
+            chart.data.datasets[1].data = data.filtered.map((y, index) => ({
+                x: data.zs[index][0], // x-data of filtered is same as measurements
+                y: y[0], // y-data of filtered
+            })); // y-data of filtered
+            chart.data.datasets[1].data.x = data.zs.map(point => point[0]); // x-data of filtered is same as measurements
+
+            const minX = Math.min(...chart.data.datasets[0].data.map(p => p.x), ...chart.data.datasets[1].data.map(p => p.x));
+            const maxX = Math.max(...chart.data.datasets[0].data.map(p => p.x), ...chart.data.datasets[1].data.map(p => p.x));
+            const minY = Math.min(...chart.data.datasets[0].data.map(p => p.y), ...chart.data.datasets[1].data.map(p => p.y));
+            const maxY = Math.max(...chart.data.datasets[0].data.map(p => p.y), ...chart.data.datasets[1].data.map(p => p.y));
+            chart.options.scales = {
+                x: {min: minX - 0.1, max: maxX + 0.1},
+                y: {min: minY - 0.1, max: maxY + 0.1}
+            }
+            
+            chart.update();
+        });
+
+    </script>
+{% endblock %}
