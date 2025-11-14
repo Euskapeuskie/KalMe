@@ -1,5 +1,4 @@
 # KalMe
-#### Video Demo: https://youtu.be/94jzSP0c-t4
 #### Description:
 ##### General overview:
 The purpose of this project is to serve as an educational tool regarding Kalman filters.\
